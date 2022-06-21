@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <configuration scan="true" scanPeriod="2 seconds">
-    <property name="LOGS_ABSOLUTE_PATH" value="/APP/a2s/SFTP/logs"/>
+    <property name="LOGS_ABSOLUTE_PATH" value="/APP/a2s/sftp/logs"/>
     <property name="HOST_NAME" value="sftp-module"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">

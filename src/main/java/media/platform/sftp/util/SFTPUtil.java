@@ -28,6 +28,15 @@ public class SFTPUtil {
     private final int port;
     private final String privateKey;
 
+    /**
+     * 서버 연결에 필요한 값들 세팅
+     *
+     * @param host 서버 주소
+     * @param userName 아이디
+     * @param password 패스워드
+     * @param port 포트번호
+     * @param privateKey 개인키
+     */
     public SFTPUtil(String host, String userName, String password, int port, String privateKey) {
         this.host = host;
         this.userName = userName;
@@ -36,20 +45,10 @@ public class SFTPUtil {
         this.privateKey = privateKey;
     }
 
-    public void init() {
-        this.init(host, userName, password, port, privateKey);
-    }
-
     /**
-     * 서버와 연결에 필요한 값들을 가져와 초기화 시킴
-     *
-     * @param host 서버 주소
-     * @param userName 아이디
-     * @param password 패스워드
-     * @param port 포트번호
-     * @param privateKey 개인키
+     * 서버와 연결 초기화
      */
-    public void init(String host, String userName, String password, int port, String privateKey) {
+    public void init() {
         log.info("SFTPUtil.init [Host:{}, User:{}, Port:{}]", host, userName, port);
 
         // JSch 라이브러리 호출

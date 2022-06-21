@@ -1,5 +1,5 @@
 #!/bin/bash
-HOME=/APP/a2s/SFTP
+HOME=/APP/a2s/sftp
 
 JAR_FILE=sftp_module-jar-with-dependencies.jar
 PATH_TO_JAR=$HOME/lib/$JAR_FILE
@@ -9,10 +9,8 @@ SERVICE_NAME=SFTP_MODULE
 
 JAVA_OPT="-Dlogback.configurationFile=$HOME/config/logback.xml"
 
-#/usr/bin/java $JAVA_OPT $DEBUG -classpath $HOME/a2s/lib/$PATH_TO_JAR media.platform.a2s.ConvertibleCall_A2sMain $JAVA_CONF/ > /dev/null 2>&1 &
-
 if [ -f "$PATH_TO_JAR" ]; then
-  /usr/bin/java $DEBUG -classpath $PATH_TO_JAR media.platform.sftp.SftpMain $JAVA_CONF/ > /dev/null 2>&1 &
+  /usr/bin/java $JAVA_OPT $DEBUG -classpath $PATH_TO_JAR media.platform.sftp.SftpMain $JAVA_CONF/ > /dev/null 2>&1 $HOME/bin/stderr &
   if [ $? -eq 0 ];then
     echo "$SERVICE_NAME started ..."
   else
