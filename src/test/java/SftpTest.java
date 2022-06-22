@@ -6,7 +6,7 @@ import org.junit.Test;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Vector;
+import java.util.List;
 
 /**
  * @author dajin kim
@@ -20,6 +20,7 @@ public class SftpTest {
     final static String LOCAL_DIR = "/Users/kimdajin/C-ACS/sftp_module/src/test/resources/upload/";
     final static String LOCAL_FILE = "/sftp_upload.B01";
     final static String TARGET_FILE_SUFFIX = ".B01";
+    final static String CONFIG = "/Users/kimdajin/C-ACS/sftp_module/src/test/resources/config";
 
     @Test
     public void test() {
@@ -177,13 +178,13 @@ public class SftpTest {
         final SFTPUtil sftpUtil = new SFTPUtil(A2S_HOST, A2S_USER_NAME, A2S_PW, PORT, null);
         sftpUtil.init();
 
-        Vector<ChannelSftp.LsEntry> files = sftpUtil.getFileList(UPLOAD_PATH);
-
         int i = 1;
-        for (ChannelSftp.LsEntry file : files) {
+        List<ChannelSftp.LsEntry> list = sftpUtil.getFileList(UPLOAD_PATH);
+        for (ChannelSftp.LsEntry file : list) {
             System.out.println(i + " : " + file.getFilename());
             i++;
         }
+
 
         // 연결 해제
         sftpUtil.disconnection();
@@ -191,11 +192,20 @@ public class SftpTest {
 
     @Test
     public void sftpManagerTest() {
-        String configPath = "/Users/kimdajin/C-ACS/sftp_module/src/test/resources/config";
-        SftpConfig config = new SftpConfig(configPath);
-
+        SftpConfig config = new SftpConfig(CONFIG);
         SftpManager sftpManager = SftpManager.getInstance();
         sftpManager.init(config);
         sftpManager.process();
+    }
+
+    @Test
+    public void sftpUtilTest() {
+        SftpConfig config = new SftpConfig(CONFIG);
+        SftpManager sftpManager = SftpManager.getInstance();
+        sftpManager.init(config);
+
+        SFTPUtil sftpUtil = sftpManager.getSftpUtil();
+        String dirPath = "/APP/a2s/a2s/lib";
+        System.out.println(dirPath + " Exist : " + sftpUtil.exists(dirPath));
     }
 }

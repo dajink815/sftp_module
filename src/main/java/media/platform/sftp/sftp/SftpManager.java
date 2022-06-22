@@ -65,31 +65,16 @@ public class SftpManager {
             return;
         }
 
-        // srcDirPath 하위 파일들 -> uploadPath 디렉토리로 이동
+        // srcDirPath 하위 파일들 -> uploadPath 로 이동
         String srcDirPath = config.getSrcDir();
         String uploadPath = config.getUploadDir();
         log.info("Local [{}] --> Target [{}@{}:{}]", srcDirPath, config.getUser(), config.getHost(), uploadPath);
 
-        // srcDirPath 체크
-        File srcDir = new File(srcDirPath);
-        if (!srcDir.exists() || !srcDir.isDirectory()) {
-            log.error("Check Directory Path [{}]", srcDirPath);
+        // srcDirPath Directory 파일 이름 리스트
+        String[] fileNames = getDirFileList(srcDirPath, uploadPath);
+        if (fileNames.length <= 0) {
             return;
         }
-
-        // uploadPath 체크
-        if (!sftpUtil.exists(uploadPath)) {
-            log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
-            return;
-        }
-
-        // srcDirPath 디렉토리에 존재하는 파일 이름 리스트
-        String[] fileNames = srcDir.list();
-        if (fileNames == null || fileNames.length <= 0) {
-            log.warn("{} is Empty", srcDirPath);
-            return;
-        }
-
         log.info("Local directory has [{}] files.", fileNames.length);
 
         // 업로드 된 총 파일 개수
@@ -99,13 +84,7 @@ public class SftpManager {
         for (String targetFile : fileNames) {
             log.debug("[{}] {}", index, targetFile);
 
-            String space;
-            if (index < 10)
-                space = "    ";
-            else if (index < 100)
-                space = "     ";
-            else
-                space = "      ";
+            String space = getSpace(index);
             index++;
 
             // 파일 필터링
@@ -146,4 +125,48 @@ public class SftpManager {
         return false;
     }
 
+    public SFTPUtil getSftpUtil() {
+        return sftpUtil;
+    }
+
+    private String getSpace(int index) {
+        String space;
+        if (index < 10)
+            space = "    ";
+        else if (index < 100)
+            space = "     ";
+        else
+            space = "      ";
+        return space;
+    }
+
+    /**
+     * srcDirPath 의 로컬 파일 리스트 조회
+     *
+     * @param srcDirPath 로컬 파일 경로
+     * @param uploadPath 업로드 경로
+     */
+    private String[] getDirFileList(String srcDirPath, String uploadPath) {
+        // srcDirPath 체크
+        File srcDir = new File(srcDirPath);
+        if (!srcDir.exists() || !srcDir.isDirectory()) {
+            log.error("Check Local Directory Path [{}]", srcDirPath);
+            return new String[0];
+        }
+
+        // uploadPath 체크
+        if (!sftpUtil.exists(uploadPath)) {
+            log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
+            return new String[0];
+        }
+
+        // srcDirPath 에 존재 하는 파일 이름 리스트
+        String[] fileNames = srcDir.list();
+        if (fileNames == null || fileNames.length <= 0) {
+            log.warn("{} is Empty", srcDirPath);
+            return new String[0];
+        }
+
+        return fileNames;
+    }
 }

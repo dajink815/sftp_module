@@ -9,7 +9,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author dajin kim
@@ -114,26 +115,26 @@ public class SFTPUtil {
      * @return
      */
     public boolean exists(String path) {
-        Vector res = null;
+        ArrayList<ChannelSftp.LsEntry> list = null;
         try {
-            res = channelSftp.ls(path);
+            list = new ArrayList<>(channelSftp.ls(path));
         } catch (SftpException e) {
             if (e.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
                 return false;
             }
         }
-        return res != null && !res.isEmpty();
+        return list != null && !list.isEmpty();
     }
 
     /**
      * @param path : ls 명령어를 입력하려고 하는 path 저장소
      * @return
      */
-    public Vector<ChannelSftp.LsEntry> getFileList(String path) {
-        Vector<ChannelSftp.LsEntry> list = null;
+    public List<ChannelSftp.LsEntry> getFileList(String path) {
+        List<ChannelSftp.LsEntry> list = null;
         try {
             channelSftp.cd(path);
-            list = channelSftp.ls(".");
+            list = new ArrayList<>(channelSftp.ls("."));
 
         } catch (Exception e) {
             log.error("SFTPUtil.getFileList.Exception ", e);
