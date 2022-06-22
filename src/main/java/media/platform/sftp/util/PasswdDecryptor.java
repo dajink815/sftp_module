@@ -8,6 +8,9 @@ package media.platform.sftp.util;
 import org.apache.commons.lang3.StringUtils;
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentPBEConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,10 +21,11 @@ import java.util.regex.Pattern;
  * @author Tony Lim
  */
 public class PasswdDecryptor {
+    static final Logger log = LoggerFactory.getLogger(PasswdDecryptor.class);
+
     StandardPBEStringEncryptor crypto;
 
-    public PasswdDecryptor(String key,
-                           String alg) {
+    public PasswdDecryptor(String key, String alg) {
         crypto = new StandardPBEStringEncryptor();
         EnvironmentPBEConfig config = new EnvironmentPBEConfig();
         config.setPassword(key);
@@ -29,15 +33,12 @@ public class PasswdDecryptor {
         crypto.setConfig(config);
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         PasswdDecryptor decryptor = new PasswdDecryptor("skt_acs", "PBEWITHMD5ANDDES");
-//        String pass=decryptor.decrypt("amqp://acs:ENC(a6QXtGt/vWduIVUhJEZqrA==)@192.168.56.101:5672");
-        //    String pass=decryptor.decrypt("amqp://acs:acs.123@192.168.56.101:5672");
-        //   System.out.println(pass);
-
-        String tt = decryptor.encrypt("acs.123");
-        System.out.println(tt);
-        System.out.println(decryptor.decrypt0(tt));
+        String encryptedPw = decryptor.encrypt("acs.123");
+        log.debug("Encrypt : {}", encryptedPw);
+        String decryptedPw = decryptor.decrypt0(encryptedPw);
+        log.debug("Decrypt : {}", decryptedPw);
     }
 
     public String decrypt0(String encrypted) {
@@ -51,14 +52,12 @@ public class PasswdDecryptor {
     public String decrypt(String f) {
         Pattern p = Pattern.compile("(ENC\\((.+?)\\))");
         Matcher m = p.matcher(f);
-        String g = new String(f);
+        String g = f;
         while (m.find()) {
-            String enc_ = m.group(1);
+            String enc = m.group(1);
             String encryptedPass = m.group(2);
-//            System.out.println(enc_);
-//            System.out.println(encryptedPass);
             String pass = decrypt0(encryptedPass);
-            g = StringUtils.replace(g, enc_, pass);
+            g = StringUtils.replace(g, enc, pass);
         }
 
         return g;
