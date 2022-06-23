@@ -1,11 +1,11 @@
 #!/bin/bash
 HOME=/APP/a2s/sftp
 
-JAR_FILE=sftp_module-jar-with-dependencies.jar
+JAR_FILE=sftp_lib-jar-with-dependencies.jar
 PATH_TO_JAR=$HOME/lib/$JAR_FILE
 JAVA_CONF=$HOME/config
 
-SERVICE_NAME=SFTP_MODULE
+SERVICE_NAME=SFTP_LIB
 
 JAVA_OPT="-Dlogback.configurationFile=$HOME/config/logback.xml"
 

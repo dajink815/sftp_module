@@ -30,8 +30,6 @@ public class SftpConfig extends SftpConfigInfo {
     private static final String SRC_DIR = "SRC_DIR";
     private static final String UPLOAD_DIR = "UPLOAD_DIR";
 
-    private static final String TARGET_FILE_SUFFIX = "TARGET_FILE_SUFFIX";
-
     public SftpConfig(String configPath) {
         loadConfigFile(configPath);
         loadConfig();
@@ -65,10 +63,8 @@ public class SftpConfig extends SftpConfigInfo {
         super.pass = getStrValue(COMMON, SFTP_PASS, "a2s.123");
         super.privateKey = getStrValue(COMMON, PRIVATE_KEY, null);
 
-        super.srcDir = getStrValue(COMMON, SRC_DIR, "/a2s_cdr");
+        super.srcDir = getStrValue(COMMON, SRC_DIR, "/a2s_cdr/backup");
         super.uploadDir = getStrValue(COMMON, UPLOAD_DIR, "");
-
-        super.targetFileSuffix = getStrValue(COMMON, TARGET_FILE_SUFFIX, ".B01");
     }
 
 

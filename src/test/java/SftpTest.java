@@ -1,10 +1,13 @@
 import com.jcraft.jsch.ChannelSftp;
 import media.platform.sftp.config.SftpConfig;
 import media.platform.sftp.sftp.SftpManager;
+import media.platform.sftp.util.CalUtil;
 import media.platform.sftp.util.SFTPUtil;
 import org.junit.Test;
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -19,34 +22,20 @@ public class SftpTest {
     final static String UPLOAD_PATH = "/APP/a2s";
     final static String LOCAL_DIR = "/Users/kimdajin/C-ACS/sftp_module/src/test/resources/upload/";
     final static String LOCAL_FILE = "/sftp_upload.B01";
-    final static String TARGET_FILE_SUFFIX = ".B01";
     final static String CONFIG = "/Users/kimdajin/C-ACS/sftp_module/src/test/resources/config";
+    private static final int START_IDX = 6;
+    private static final String DATE_FORMAT = "yyyyMMdd";
 
-    @Test
-    public void test() {
-        String file  = "sftp_upload.B01.INFO";
-        String file2 = "sftp_upload.B01";
-        String dir = "upload";
+    private boolean checkValid(String fileName) {
+        if (fileName.length() < START_IDX + DATE_FORMAT.length()) {
+            return false;
+        }
 
-        System.out.println("Result : " + checkValid(file));
-        System.out.println("Result : " + checkValid(file2));
-        System.out.println("Result : " + checkValid(dir));
-    }
+        // 어제 날짜와 파일의 날짜 비교
+        String yesterday = CalUtil.calDate(-1);
+        String fileDate = fileName.substring(START_IDX, START_IDX + DATE_FORMAT.length());
 
-    public static boolean checkValid(String fileName) {
-        int suffixLength = TARGET_FILE_SUFFIX.length();
-        int index = fileName.length() - suffixLength;
-
-        String suffix = fileName.substring(index);
-        System.out.println(fileName + " suffix : " + suffix);
-        return TARGET_FILE_SUFFIX.equalsIgnoreCase(suffix);
-    }
-
-    public static String parseSuffix(String fileName) {
-        int suffixLength = TARGET_FILE_SUFFIX.length();
-
-        int index = fileName.length() - suffixLength;
-        return fileName.substring(index);
+        return yesterday.equals(fileDate);
     }
 
     @Test
@@ -207,5 +196,32 @@ public class SftpTest {
         SFTPUtil sftpUtil = sftpManager.getSftpUtil();
         String dirPath = "/APP/a2s/a2s/lib";
         System.out.println(dirPath + " Exist : " + sftpUtil.exists(dirPath));
+    }
+
+    @Test
+    public void sortFileList() {
+        SftpConfig config = new SftpConfig(CONFIG);
+
+        File srcDir = new File(config.getSrcDir());
+        String[] fileNames = srcDir.list();
+
+        if (fileNames != null && fileNames.length > 0) {
+            System.out.println("Local directory has " + fileNames.length + " files.");
+
+            int i = 1;
+            for (String file : fileNames) {
+                System.out.println(i + " ) " + file);
+                i++;
+            }
+
+            System.out.println("Array to List : ");
+            List<String> fileList = Arrays.asList(fileNames);
+            System.out.println(fileList);
+
+            // 숫자 대문자 영어 소문자 영어
+            Collections.sort(fileList);
+            System.out.println("Sort Result : ");
+            System.out.println(fileList);
+        }
     }
 }

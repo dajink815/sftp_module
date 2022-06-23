@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>media.platform.sftp</groupId>
-    <artifactId>SFTP_MODULE</artifactId>
+    <artifactId>SFTPlib</artifactId>
     <version>ACS_C_R2.0.3v1</version>
     <packaging>jar</packaging>
 
@@ -103,7 +103,7 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
-                            <finalName>sftp_module</finalName>
+                            <finalName>sftp_lib</finalName>
                             <archive>
                                 <manifest>
                                     <mainClass>media.platform.sftp.SftpMain</mainClass>
@@ -146,7 +146,7 @@
                             <directory>/APP/a2s/sftp/lib/</directory>
                             <sources>
                                 <source>
-                                    <location>${project.basedir}/target/sftp_module-jar-with-dependencies.jar</location>
+                                    <location>${project.basedir}/target/sftp_lib-jar-with-dependencies.jar</location>
                                 </source>
                             </sources>
                         </mapping>

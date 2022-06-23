@@ -14,8 +14,6 @@ public class SftpConfigInfo {
     protected String srcDir;
     protected String uploadDir;
 
-    protected String targetFileSuffix;
-
     protected SftpConfigInfo() {
         // nothing
     }
@@ -48,9 +46,6 @@ public class SftpConfigInfo {
         return uploadDir;
     }
 
-    public String getTargetFileSuffix() {
-        return targetFileSuffix;
-    }
 
     @Override
     public String toString() {
@@ -62,7 +57,6 @@ public class SftpConfigInfo {
                 ", privateKey='" + privateKey + '\'' +
                 ", srcDir='" + srcDir + '\'' +
                 ", uploadDir='" + uploadDir + '\'' +
-                ", targetFileSuffix='" + targetFileSuffix + '\'' +
                 '}';
     }
 }

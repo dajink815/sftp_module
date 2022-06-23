@@ -29,7 +29,7 @@ public class SftpMain {
             return;
         }
 
-        log.debug("SFTP Process Start {} ", args[0]);
+        log.info("SFTP Process Start {} ", args[0]);
 
         AppInstance instance = AppInstance.getInstance();
         instance.setConfigPath(args[0]);

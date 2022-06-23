@@ -1,13 +1,12 @@
 package media.platform.sftp.sftp;
 
 import media.platform.sftp.config.SftpConfig;
-import media.platform.sftp.util.PasswdDecryptor;
-import media.platform.sftp.util.SFTPUtil;
-import media.platform.sftp.util.StringUtil;
+import media.platform.sftp.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.*;
 
 /**
  * @author dajin kim
@@ -20,6 +19,13 @@ public class SftpManager {
 
     public static final String KEY = "SFTP";
     public static final String ALGORITHM = "PBEWITHMD5ANDDES";
+    private static final int START_IDX = 6;
+    private static final String DATE_FORMAT = "yyyyMMdd";
+    private static final String INFO_SUFFIX = ".INFO";
+
+    private String cdrFileName;
+    private String infoFileName;
+    private int uploadFileCnt = 0;
 
     private SftpManager() {
         // nothing
@@ -31,10 +37,15 @@ public class SftpManager {
         return sftpManager;
     }
 
+    public SFTPUtil getSftpUtil() {
+        return sftpUtil;
+    }
+
     public void init(SftpConfig config) {
         if (config == null) return;
         this.config = config;
 
+        // Password 해독
         PasswdDecryptor decryptor = new PasswdDecryptor(KEY, ALGORITHM);
         String decPass = "";
 
@@ -59,74 +70,160 @@ public class SftpManager {
     public void process() {
         log.info("SftpManager.process Start");
 
+        // Config 초기화 체크
+        if (config == null) {
+            log.error("Need to Initialize SftpConfig");
+            return;
+        }
+
         // SFTPUtil 초기화 체크
         if (sftpUtil == null || !sftpUtil.isConnected()) {
             log.error("Need to Initialize SFTPUtil");
             return;
         }
 
-        // srcDirPath 하위 파일들 -> uploadPath 로 이동
+        // srcDirPath -> uploadPath 로 이동
         String srcDirPath = config.getSrcDir();
         String uploadPath = config.getUploadDir();
         log.info("Local [{}] --> Target [{}@{}:{}]", srcDirPath, config.getUser(), config.getHost(), uploadPath);
 
-        // srcDirPath Directory 파일 이름 리스트
-        String[] fileNames = getDirFileList(srcDirPath, uploadPath);
-        if (fileNames.length <= 0) {
+        // srcDirPath Directory 내의 정렬된 파일 이름 리스트
+        List<String> fileList = getDirFileList(srcDirPath, uploadPath);
+
+        // srcDirectory 비어 있으면 return
+        if (fileList.isEmpty()) {
+            log.warn("{} is Empty", srcDirPath);
             return;
         }
-        log.info("Local directory has [{}] files.", fileNames.length);
+        log.info(">>  Local directory has [{}] files.", fileList.size());
 
-        // 업로드 된 총 파일 개수
-        int uploadFileCnt = 0;
 
+        // 파일 조회
         int index = 1;
-        for (String targetFile : fileNames) {
-            log.debug("[{}] {}", index, targetFile);
-
-            String space = getSpace(index);
+        for (String targetFile : fileList) {
+            // 날짜로 파일 필터링
+            if (checkValid(targetFile, index)) {
+                // CDR, INFO 파일 이름 변수에 세팅
+                if (isInfoFile(targetFile)) {
+                    infoFileName = targetFile;
+                    log.info("=>>  Found INFO File : {}", infoFileName);
+                } else {
+                    cdrFileName = targetFile;
+                    log.info("=>>  Found CDR File : {}", cdrFileName);
+                }
+            }
             index++;
 
-            // 파일 필터링
-            if (!checkValid(targetFile)) {
-                log.debug("{}Check Valid Fail : {}", space, targetFile);
-                continue;
-            }
-
-            File uploadFile = new File(srcDirPath + File.separator + targetFile);
-            if (uploadFile.isFile()) {
-                // 업로드 결과
-                boolean result = sftpUtil.upload(uploadPath, uploadFile);
-                log.info("{}SFTPManager Upload Result [{}] : {}", space, targetFile, result);
-                if (result) uploadFileCnt++;
-            } else {
-                log.debug("{}SFTPManager [{}] is Directory, Cannot Upload", space, targetFile);
+            // CDR, INFO 모두 찾으면 조회 종료
+            if (cdrFileName != null && infoFileName != null) {
+                break;
             }
         }
 
+        // CDR, INFO 파일 전송
+        uploadFiles(srcDirPath, uploadPath);
         log.info(">>  SFTPManager Total [{}] Files Uploaded", uploadFileCnt);
 
         // 연결 해제
         sftpUtil.disconnection();
     }
 
-    private boolean checkValid(String fileName) {
-        try {
-            String suffix = config.getTargetFileSuffix();
-            int suffixLength = suffix.length();
-            int index = fileName.length() - suffixLength;
-            if (index < 0) return false;
-
-            String fileSuffix = fileName.substring(index);
-            return suffix.equalsIgnoreCase(fileSuffix);
-        } catch (Exception e) {
-            log.error("SftpManager.checkValid.Exception ", e);
+    /**
+     * srcDirPath 의 로컬 파일 리스트 조회
+     *
+     * @param srcDirPath 로컬 파일 경로
+     * @param uploadPath 업로드 경로
+     */
+    private List<String> getDirFileList(String srcDirPath, String uploadPath) {
+        // srcDirPath 체크
+        File srcDir = new File(srcDirPath);
+        if (!srcDir.exists() || !srcDir.isDirectory()) {
+            log.error("Check Local Directory Path [{}]", srcDirPath);
+            return new ArrayList<>();
         }
-        return false;
+
+        // uploadPath 체크
+        if (!sftpUtil.exists(uploadPath)) {
+            log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
+            return new ArrayList<>();
+        }
+
+        // srcDirPath 에 존재 하는 파일 이름 리스트 내림차순 정렬
+        List<String> fileList = Arrays.asList(Objects.requireNonNull(srcDir.list()));
+        fileList.sort(Collections.reverseOrder());
+        return fileList;
     }
 
-    public SFTPUtil getSftpUtil() {
-        return sftpUtil;
+    /**
+     *
+     *
+     * @param fileName 파일 이름
+     * @param index 파일 순서
+     */
+    private boolean checkValid(String fileName, int index) {
+        if (fileName.length() < START_IDX + DATE_FORMAT.length()) {
+            log.debug("[{}] {} : checkValid FAIL", index, fileName);
+            return false;
+        }
+
+        // 어제 날짜와 파일의 날짜 비교
+        String yesterday = CalUtil.calDate(-1);
+        String fileDate = fileName.substring(START_IDX, START_IDX + DATE_FORMAT.length());
+
+        boolean result = yesterday.equals(fileDate);
+        log.debug("[{}] {} : checkValid {}", index, fileName, StringUtil.getOkFail(result));
+        log.debug("{}Check File Date({})", getSpace(index), fileDate);
+        return result;
+    }
+
+    /**
+     * CDR, INFO 파일 전송
+     *
+     * @param srcDirPath 로컬 파일 경로
+     * @param uploadPath 업로드 경로
+     */
+    private void uploadFiles(String srcDirPath, String uploadPath) {
+        // CDR, INFO 파일 모두 존재할 때만 업로드
+        if (cdrFileName != null && infoFileName != null) {
+            String cdrPath = srcDirPath + File.separator + cdrFileName;
+            String infoPath = srcDirPath + File.separator + infoFileName;
+
+            if (FileUtil.checkFile(cdrPath) && FileUtil.checkFile(infoPath)) {
+                uploadFile(cdrPath, uploadPath);
+                uploadFile(infoPath, uploadPath);
+                return;
+            }
+        }
+
+        String yesterday = CalUtil.calDate(-1);
+        log.warn("Check [{}] CDR or INFO File", yesterday);
+    }
+
+    /**
+     * 파일 전송
+     *
+     * @param filePath 로컬 파일 경로/이름
+     * @param uploadPath 업로드 경로
+     */
+    private void uploadFile(String filePath, String uploadPath) {
+        if (sftpUtil == null) {
+            log.warn("SftpManager.uploadFile SftpUtil is Null");
+            return;
+        }
+
+        File uploadFile = new File(filePath);
+        boolean result = sftpUtil.upload(uploadPath, uploadFile);
+        if (result) uploadFileCnt ++;
+        log.info("SFTPManager Upload Result [{}] : {}", filePath, result);
+    }
+
+    /**
+     * CDR INFO 파일 이름 확인
+     *
+     * @param fileName 파일 이름
+     */
+    private boolean isInfoFile(String fileName) {
+        return fileName.contains(INFO_SUFFIX);
     }
 
     private String getSpace(int index) {
@@ -138,35 +235,5 @@ public class SftpManager {
         else
             space = "      ";
         return space;
-    }
-
-    /**
-     * srcDirPath 의 로컬 파일 리스트 조회
-     *
-     * @param srcDirPath 로컬 파일 경로
-     * @param uploadPath 업로드 경로
-     */
-    private String[] getDirFileList(String srcDirPath, String uploadPath) {
-        // srcDirPath 체크
-        File srcDir = new File(srcDirPath);
-        if (!srcDir.exists() || !srcDir.isDirectory()) {
-            log.error("Check Local Directory Path [{}]", srcDirPath);
-            return new String[0];
-        }
-
-        // uploadPath 체크
-        if (!sftpUtil.exists(uploadPath)) {
-            log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
-            return new String[0];
-        }
-
-        // srcDirPath 에 존재 하는 파일 이름 리스트
-        String[] fileNames = srcDir.list();
-        if (fileNames == null || fileNames.length <= 0) {
-            log.warn("{} is Empty", srcDirPath);
-            return new String[0];
-        }
-
-        return fileNames;
     }
 }
