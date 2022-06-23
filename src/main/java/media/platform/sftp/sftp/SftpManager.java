@@ -41,6 +41,9 @@ public class SftpManager {
         return sftpUtil;
     }
 
+    /**
+     * Initialize - set SFTPUtil
+     * */
     public void init(SftpConfig config) {
         if (config == null) return;
         this.config = config;
@@ -67,18 +70,15 @@ public class SftpManager {
             log.error("SftpManager.init Fail");
     }
 
+    /**
+     * SftpManager Main Process
+     * */
     public void process() {
         log.info("SftpManager.process Start");
 
-        // Config 초기화 체크
-        if (config == null) {
-            log.error("Need to Initialize SftpConfig");
-            return;
-        }
-
-        // SFTPUtil 초기화 체크
-        if (sftpUtil == null || !sftpUtil.isConnected()) {
-            log.error("Need to Initialize SFTPUtil");
+        // Config, SFTPUtil 초기화 체크
+        if (config == null || sftpUtil == null || !sftpUtil.isConnected()) {
+            log.error("SftpManager - Need to Initialize");
             return;
         }
 
@@ -87,8 +87,14 @@ public class SftpManager {
         String uploadPath = config.getUploadDir();
         log.info("Local [{}] --> Target [{}@{}:{}]", srcDirPath, config.getUser(), config.getHost(), uploadPath);
 
-        // srcDirPath Directory 내의 정렬된 파일 이름 리스트
-        List<String> fileList = getDirFileList(srcDirPath, uploadPath);
+        // uploadPath 체크
+        if (!sftpUtil.exists(uploadPath)) {
+            log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
+            return;
+        }
+
+        // srcDirPath 체크 및 내림 차순 으로 정렬된 파일 이름 리스트
+        List<String> fileList = getDirFileList(srcDirPath);
 
         // srcDirectory 비어 있으면 return
         if (fileList.isEmpty()) {
@@ -132,19 +138,12 @@ public class SftpManager {
      * srcDirPath 의 로컬 파일 리스트 조회
      *
      * @param srcDirPath 로컬 파일 경로
-     * @param uploadPath 업로드 경로
      */
-    private List<String> getDirFileList(String srcDirPath, String uploadPath) {
+    private List<String> getDirFileList(String srcDirPath) {
         // srcDirPath 체크
         File srcDir = new File(srcDirPath);
         if (!srcDir.exists() || !srcDir.isDirectory()) {
             log.error("Check Local Directory Path [{}]", srcDirPath);
-            return new ArrayList<>();
-        }
-
-        // uploadPath 체크
-        if (!sftpUtil.exists(uploadPath)) {
-            log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
             return new ArrayList<>();
         }
 
@@ -155,7 +154,7 @@ public class SftpManager {
     }
 
     /**
-     *
+     * 어제 날짜의 파일 인지 확인
      *
      * @param fileName 파일 이름
      * @param index 파일 순서
