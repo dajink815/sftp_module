@@ -1,6 +1,8 @@
 package media.platform.sftp.sftp;
 
+import com.jcraft.jsch.ChannelSftp;
 import media.platform.sftp.config.SftpConfig;
+import media.platform.sftp.service.ServiceDefine;
 import media.platform.sftp.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +75,7 @@ public class SftpManager {
     /**
      * SftpManager Main Process
      * */
-    public void process() {
+    public void process(ServiceDefine mode) {
         log.info("SftpManager.process Start");
 
         // Config, SFTPUtil 초기화 체크
@@ -93,6 +95,33 @@ public class SftpManager {
             return;
         }
 
+        if (ServiceDefine.MODE_LIST.equals(mode)) {
+            listProcess(uploadPath);
+        } else {
+            uploadProcess(srcDirPath, uploadPath);
+        }
+
+        // 연결 해제
+        sftpUtil.disconnection();
+    }
+
+    private void listProcess(String uploadPath) {
+        log.info("Check Remote Directory File List");
+
+        List<ChannelSftp.LsEntry> fileList = sftpUtil.getFileList(uploadPath);
+
+        // . , .. , 숨김 파일 제외 하고 출력
+        int index = 1;
+        for (ChannelSftp.LsEntry file : fileList) {
+            if (!file.getFilename().equals(".") && !file.getFilename().equals("..")
+                    && !file.getFilename().startsWith(".")) {
+                log.info("[{}] {}", index, file.getFilename());
+                index++;
+            }
+        }
+    }
+
+    private void uploadProcess(String srcDirPath, String uploadPath) {
         // srcDirPath 체크 및 내림 차순 으로 정렬된 파일 이름 리스트
         List<String> fileList = getDirFileList(srcDirPath);
 
@@ -129,9 +158,6 @@ public class SftpManager {
         // CDR, INFO 파일 전송
         uploadFiles(srcDirPath, uploadPath);
         log.info(">>  SFTPManager Total [{}] Files Uploaded", uploadFileCnt);
-
-        // 연결 해제
-        sftpUtil.disconnection();
     }
 
     /**

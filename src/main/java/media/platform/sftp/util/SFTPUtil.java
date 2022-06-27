@@ -52,7 +52,7 @@ public class SFTPUtil {
     public void init() {
         log.info("SFTPUtil.init [Host:{}, User:{}, Port:{}]", host, userName, port);
 
-        // JSch 라이브러리 호출
+        // JSch 호출
         JSch jSch = new JSch();
 
         try {
@@ -74,9 +74,10 @@ public class SFTPUtil {
                 session.setPassword(password);
             }
 
-            // 프로퍼티 설정 (세션 키 없이 호출?
+            // 세션과 관련된 정보 설정
             java.util.Properties config = new java.util.Properties();
-            config.put("StrictHostKeyChecking", "no"); // 접속 시 hostkeychecking 여부
+            // 호스트 정보 검사 하지 않음
+            config.put("StrictHostKeyChecking", "no"); // 접속 시 HostKeyChecking 여부
             session.setConfig(config);
 
             // 세션 연결

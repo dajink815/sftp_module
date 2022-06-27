@@ -2,6 +2,8 @@ package media.platform.sftp.service;
 
 import media.platform.sftp.config.SftpConfig;
 import media.platform.sftp.sftp.SftpManager;
+import media.platform.sftp.util.PasswdDecryptor;
+import media.platform.sftp.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,19 +30,19 @@ public class ServiceManager {
         return serviceManager;
     }
 
-    public void process() {
-        this.startService();
+    public void process(ServiceDefine mode) {
+        startService(mode);
         stopService();
     }
 
     /**
      * Start Service
      */
-    public void startService() {
-        log.info("Start Service");
+    private void startService(ServiceDefine mode) {
+        log.info("Start Service ({} mode)", mode.getStr());
         SftpManager sftpManager = SftpManager.getInstance();
         sftpManager.init(instance.getConfig());
-        sftpManager.process();
+        sftpManager.process(mode);
     }
 
     /**
@@ -48,5 +50,18 @@ public class ServiceManager {
      */
     private void stopService() {
         log.info("Stop Service");
+    }
+
+    public static void generateKey(String userPw) {
+        if (StringUtil.isNull(userPw)) {
+            System.err.println("SFTP Key Generator Arguments Error");
+            System.err.println("Please Enter User Password.");
+            return;
+        }
+
+        System.out.println("SFTP Key Generator Start... ");
+        PasswdDecryptor decryptor = new PasswdDecryptor(SftpManager.KEY, SftpManager.ALGORITHM);
+        String encryptedPw = decryptor.encrypt(userPw);
+        System.out.println("SFTP Key => " + encryptedPw);
     }
 }

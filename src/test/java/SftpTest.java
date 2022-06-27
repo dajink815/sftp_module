@@ -1,5 +1,7 @@
 import com.jcraft.jsch.ChannelSftp;
+import media.platform.sftp.SftpMain;
 import media.platform.sftp.config.SftpConfig;
+import media.platform.sftp.service.ServiceDefine;
 import media.platform.sftp.sftp.SftpManager;
 import media.platform.sftp.util.CalUtil;
 import media.platform.sftp.util.SFTPUtil;
@@ -184,7 +186,7 @@ public class SftpTest {
         SftpConfig config = new SftpConfig(CONFIG);
         SftpManager sftpManager = SftpManager.getInstance();
         sftpManager.init(config);
-        sftpManager.process();
+        sftpManager.process(ServiceDefine.MODE_UPLOAD);
     }
 
     @Test
