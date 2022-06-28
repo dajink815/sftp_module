@@ -94,7 +94,7 @@ public class SftpTest {
         System.out.println(LOCAL_FILE + " Upload Result - " + isUpload); // 업로드 여부 확인
 
         // 연결 해제
-        sftpUtil.disconnection();
+        sftpUtil.disconnect();
     }
 
     @Test
@@ -160,7 +160,7 @@ public class SftpTest {
         System.out.println("Total [" + uploadFileCnt + "] Files Uploaded");
 
         // 연결 해제
-        sftpUtil.disconnection();
+        sftpUtil.disconnect();
     }
 
     @Test
@@ -178,7 +178,7 @@ public class SftpTest {
 
 
         // 연결 해제
-        sftpUtil.disconnection();
+        sftpUtil.disconnect();
     }
 
     @Test

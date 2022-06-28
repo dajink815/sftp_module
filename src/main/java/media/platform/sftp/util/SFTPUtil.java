@@ -20,7 +20,6 @@ public class SFTPUtil {
 
     private static final String CHANNEL_TYPE = "sftp";
     private Session session = null;
-    private Channel channel = null;
     private ChannelSftp channelSftp = null;
 
     private final String host;
@@ -84,13 +83,13 @@ public class SFTPUtil {
             session.connect();
 
             // 채널 방식 설정 (sftp 채널 오픈) -> 채널을 이용해 Upload & Download
-            channel = session.openChannel(CHANNEL_TYPE);
+            Channel channel = session.openChannel(CHANNEL_TYPE);
             channel.connect();
+
+            channelSftp = (ChannelSftp) channel;
         } catch (JSchException e) {
             log.error("SFTPUtil.init.Exception ", e);
         }
-
-        channelSftp = (ChannelSftp) channel;
     }
 
     /**
@@ -203,16 +202,33 @@ public class SFTPUtil {
     /**
      * 연결 종료
      */
-    public void disconnection() {
-        if (session.isConnected()) {
-            log.info("SFTPUtil Disconnecting...");
-            channelSftp.quit();
-            channel.disconnect();
-            session.disconnect();
+    public void disconnect() {
+        // ChannelSftp 가 Channel 을 감싸고 있으므로 channelSftp 만 종료
+        // -> 내부적으로 Channel.disconnect() 도 호출됨
+        //    (ChannelSftp quit == exit == disconnect)
+        try {
+            if (channelSftp != null && channelSftp.isConnected()) {
+                channelSftp.quit();
+                log.info("SFTPUtil.disconnect - ChannelSftp (Status:{})", channelSftp.isConnected());
+            }
+        } finally {
+            channelSftp = null;
         }
+
+        // session.disconnect 를 안하면 프로세스가 안 죽는다.
+        try {
+            if (session != null && session.isConnected()) {
+                session.disconnect();
+                log.info("SFTPUtil.disconnect - Session (Status:{})", session.isConnected());
+            }
+        } finally {
+            session = null;
+        }
+
+        log.info("SFTPUtil Disconnected...");
     }
 
     public boolean isConnected() {
-        return session != null && session.isConnected();
+        return channelSftp != null && channelSftp.isConnected();
     }
 }

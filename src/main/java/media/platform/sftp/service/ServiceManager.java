@@ -41,8 +41,12 @@ public class ServiceManager {
     private void startService(ServiceDefine mode) {
         log.info("Start Service ({} mode)", mode.getStr());
         SftpManager sftpManager = SftpManager.getInstance();
-        sftpManager.init(instance.getConfig());
-        sftpManager.process(mode);
+        if (sftpManager.init(instance.getConfig())) {
+            log.info("SftpManager INIT SUCCESS");
+            sftpManager.process(mode);
+        } else {
+            log.error("SftpManager INIT FAIL");
+        }
     }
 
     /**

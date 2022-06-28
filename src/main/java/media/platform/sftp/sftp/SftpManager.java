@@ -41,8 +41,8 @@ public class SftpManager {
     /**
      * Initialize - set SFTPUtil
      * */
-    public void init(SftpConfig config) {
-        if (config == null) return;
+    public boolean init(SftpConfig config) {
+        if (config == null) return false;
         this.config = config;
 
         // Password 해독
@@ -61,10 +61,7 @@ public class SftpManager {
         sftpUtil = new SFTPUtil(config.getHost(), config.getUser(), decPass, config.getPort(), config.getPrivateKey());
         sftpUtil.init();
 
-        if (sftpUtil.isConnected())
-            log.info("SftpManager.init Success");
-        else
-            log.error("SftpManager.init Fail");
+        return sftpUtil.isConnected();
     }
 
     /**
@@ -73,33 +70,37 @@ public class SftpManager {
     public void process(ServiceDefine mode) {
         log.info("SftpManager.process Start");
 
-        // 1. Config, SFTPUtil 초기화 체크
-        if (config == null || sftpUtil == null || !sftpUtil.isConnected()) {
-            log.error("SftpManager - Need to Initialize");
-            return;
+        try {
+            // 1. Config, SFTPUtil 다시 체크
+            if (config == null || sftpUtil == null || !sftpUtil.isConnected()) {
+                log.error("SftpManager - Need to Initialize");
+                return;
+            }
+
+            // 2. 로컬 디렉토리 경로, 업로드 경로
+            String srcDirPath = config.getSrcDir();
+            String uploadPath = config.getUploadDir();
+            // srcDirPath -> uploadPath 로 이동
+            log.info("Local [{}] --> Target [{}@{}:{}]", srcDirPath, config.getUser(), config.getHost(), uploadPath);
+
+            // 3. uploadPath 체크
+            if (!sftpUtil.exists(uploadPath)) {
+                log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
+                return;
+            }
+
+            // 4. 모드 별 동작
+            if (ServiceDefine.MODE_LIST.equals(mode)) {
+                listProcess(uploadPath);
+            } else {
+                uploadProcess(srcDirPath, uploadPath);
+            }
+        } finally {
+            // SFTP 채널을 제대로 종료 해주지 않으면 프로세스가 죽지 않는 문제 발생
+            // 5. 연결 해제
+            if (sftpUtil != null)
+                sftpUtil.disconnect();
         }
-
-        // 2. 로컬 디렉토리 경로, 업로드 경로
-        String srcDirPath = config.getSrcDir();
-        String uploadPath = config.getUploadDir();
-        // srcDirPath -> uploadPath 로 이동
-        log.info("Local [{}] --> Target [{}@{}:{}]", srcDirPath, config.getUser(), config.getHost(), uploadPath);
-
-        // 3. uploadPath 체크
-        if (!sftpUtil.exists(uploadPath)) {
-            log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
-            return;
-        }
-
-        // 4. 모드 별 동작
-        if (ServiceDefine.MODE_LIST.equals(mode)) {
-            listProcess(uploadPath);
-        } else {
-            uploadProcess(srcDirPath, uploadPath);
-        }
-
-        // 5. 연결 해제
-        sftpUtil.disconnection();
     }
 
     /**

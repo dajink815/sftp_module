@@ -70,7 +70,6 @@ public class SftpConfigInfo {
                 ", user='" + user + '\'' +
                 ", port=" + port +
                 ", pass='" + pass + '\'' +
-                ", privateKey='" + privateKey + '\'' +
                 ", srcDir='" + srcDir + '\'' +
                 ", uploadDir='" + uploadDir + '\'' +
                 ", filterValue='" + filterValue + '\'' +
