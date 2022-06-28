@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>media.platform.sftp</groupId>
-    <artifactId>SFTP_LIB</artifactId>
-    <version>SFTP_R1.0.0v1</version>
+    <artifactId>C-ACS</artifactId>
+    <version>A2S_SFTP_R1.0.0rc1</version>
     <packaging>jar</packaging>
 
     <properties>
