@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author dajin kim
@@ -21,12 +22,6 @@ public class SftpManager {
 
     public static final String KEY = "SFTP";
     public static final String ALGORITHM = "PBEWITHMD5ANDDES";
-    private static final int START_IDX = 6;
-    private static final String DATE_FORMAT = "yyyyMMdd";
-    private static final String INFO_SUFFIX = ".INFO";
-
-    private String cdrFileName;
-    private String infoFileName;
     private int uploadFileCnt = 0;
 
     private SftpManager() {
@@ -78,39 +73,44 @@ public class SftpManager {
     public void process(ServiceDefine mode) {
         log.info("SftpManager.process Start");
 
-        // Config, SFTPUtil 초기화 체크
+        // 1. Config, SFTPUtil 초기화 체크
         if (config == null || sftpUtil == null || !sftpUtil.isConnected()) {
             log.error("SftpManager - Need to Initialize");
             return;
         }
 
-        // srcDirPath -> uploadPath 로 이동
+        // 2. 로컬 디렉토리 경로, 업로드 경로
         String srcDirPath = config.getSrcDir();
         String uploadPath = config.getUploadDir();
+        // srcDirPath -> uploadPath 로 이동
         log.info("Local [{}] --> Target [{}@{}:{}]", srcDirPath, config.getUser(), config.getHost(), uploadPath);
 
-        // uploadPath 체크
+        // 3. uploadPath 체크
         if (!sftpUtil.exists(uploadPath)) {
             log.error("Check Remote Directory Path [{}@{}:{}]", config.getUser(), config.getHost(), uploadPath);
             return;
         }
 
+        // 4. 모드 별 동작
         if (ServiceDefine.MODE_LIST.equals(mode)) {
             listProcess(uploadPath);
         } else {
             uploadProcess(srcDirPath, uploadPath);
         }
 
-        // 연결 해제
+        // 5. 연결 해제
         sftpUtil.disconnection();
     }
 
+    /**
+     * LIST MODE - Print Remote Directory File List
+     * */
     private void listProcess(String uploadPath) {
         log.info("Check Remote Directory File List");
 
         List<ChannelSftp.LsEntry> fileList = sftpUtil.getFileList(uploadPath);
 
-        // . , .. , 숨김 파일 제외 하고 출력
+        // '.' , '..' , 숨김 파일 제외 하고 출력
         int index = 1;
         for (ChannelSftp.LsEntry file : fileList) {
             if (!file.getFilename().equals(".") && !file.getFilename().equals("..")
@@ -121,112 +121,67 @@ public class SftpManager {
         }
     }
 
+    /**
+     * UPLOAD MODE - Upload Filtered File
+     * */
     private void uploadProcess(String srcDirPath, String uploadPath) {
-        // srcDirPath 체크 및 내림 차순 으로 정렬된 파일 이름 리스트
-        List<String> fileList = getDirFileList(srcDirPath);
+        // 1. srcDirPath 체크 및 필터링 된 파일 이름 리스트
+        String filterValue = config.getFilterValue();
+        List<String> fileList = getDirFileList(srcDirPath, filterValue);
 
-        // srcDirectory 비어 있으면 return
+        // 2. srcDirectory 비어 있으면 return
         if (fileList.isEmpty()) {
-            log.warn("{} is Empty", srcDirPath);
+            log.warn(">> {} [{}] File Empty", srcDirPath, filterValue);
             return;
         }
-        log.info(">>  Local directory has [{}] files.", fileList.size());
 
+        log.info(">>  Local directory has [{}] files.", getDirFileNum(srcDirPath));
+        log.info(">>  [{}] file num : {}", filterValue, fileList.size());
+        log.debug("Filtered File List: {}", fileList);
 
-        // 파일 조회
-        int index = 1;
-        for (String targetFile : fileList) {
-            // 날짜로 파일 필터링
-            if (checkValid(targetFile, index)) {
-                // CDR, INFO 파일 이름 변수에 세팅
-                if (isInfoFile(targetFile)) {
-                    infoFileName = targetFile;
-                    log.info("=>>  Found INFO File : {}", infoFileName);
-                } else {
-                    cdrFileName = targetFile;
-                    log.info("=>>  Found CDR File : {}", cdrFileName);
-                }
-            }
-            index++;
+        // 3. 확장자 명으로 필터링
+        List<String> extsList = config.getFilterExtsList();
+        log.debug("Extension List: {}", extsList);
 
-            // CDR, INFO 모두 찾으면 조회 종료
-            if (cdrFileName != null && infoFileName != null) {
-                break;
+        List<String> foundFile = fileList.stream()
+                .filter(fileName -> FileUtil.checkExtensions(fileName, extsList))
+                .collect(Collectors.toList());
+        log.debug("FoundFile : {}", foundFile);
+
+        // 4. 파일 전송
+        for (String file : foundFile) {
+            String filePath = srcDirPath + File.separator + file;
+            if (FileUtil.checkFile(filePath)) {
+                uploadFile(filePath, uploadPath);
+            } else {
+                log.info("File Doesnt Exist, Cannot Send [{}]", filePath);
             }
         }
 
-        // CDR, INFO 파일 전송
-        uploadFiles(srcDirPath, uploadPath);
-        log.info(">>  SFTPManager Total [{}] Files Uploaded", uploadFileCnt);
+        // 5. 파일 전송 결과 출력
+        log.info(">>  SFTPManager Upload Total [{}] Files.", uploadFileCnt);
     }
 
     /**
-     * srcDirPath 의 로컬 파일 리스트 조회
-     *
-     * @param srcDirPath 로컬 파일 경로
+     * 디렉토리의 파일 리스트 필터링 해서 조회
+     * @param dirPath 디렉토리 경로
+     * @param filterValue 파일 필터링 값
      */
-    private List<String> getDirFileList(String srcDirPath) {
-        // srcDirPath 체크
-        File srcDir = new File(srcDirPath);
-        if (!srcDir.exists() || !srcDir.isDirectory()) {
-            log.error("Check Local Directory Path [{}]", srcDirPath);
+    private List<String> getDirFileList(String dirPath, String filterValue) {
+        // dirPath 체크
+        File dir = new File(dirPath);
+        if (!dir.exists() || !dir.isDirectory()) {
+            log.error("Check Local Directory Path [{}]", dirPath);
             return new ArrayList<>();
         }
 
-        // srcDirPath 에 존재 하는 파일 이름 리스트 내림차순 정렬
-        List<String> fileList = Arrays.asList(Objects.requireNonNull(srcDir.list()));
-        fileList.sort(Collections.reverseOrder());
-        return fileList;
-    }
-
-    /**
-     * 어제 날짜의 파일 인지 확인
-     *
-     * @param fileName 파일 이름
-     * @param index 파일 순서
-     */
-    private boolean checkValid(String fileName, int index) {
-        if (fileName.length() < START_IDX + DATE_FORMAT.length()) {
-            log.debug("[{}] {} : checkValid FAIL", index, fileName);
-            return false;
-        }
-
-        // 어제 날짜와 파일의 날짜 비교
-        String yesterday = CalUtil.calDate(-1);
-        String fileDate = fileName.substring(START_IDX, START_IDX + DATE_FORMAT.length());
-
-        boolean result = yesterday.equals(fileDate);
-        log.debug("[{}] {} : checkValid {}", index, fileName, StringUtil.getOkFail(result));
-        log.debug("{}Check File Date({})", getSpace(index), fileDate);
-        return result;
-    }
-
-    /**
-     * CDR, INFO 파일 전송
-     *
-     * @param srcDirPath 로컬 파일 경로
-     * @param uploadPath 업로드 경로
-     */
-    private void uploadFiles(String srcDirPath, String uploadPath) {
-        // CDR, INFO 파일 모두 존재할 때만 업로드
-        if (cdrFileName != null && infoFileName != null) {
-            String cdrPath = srcDirPath + File.separator + cdrFileName;
-            String infoPath = srcDirPath + File.separator + infoFileName;
-
-            if (FileUtil.checkFile(cdrPath) && FileUtil.checkFile(infoPath)) {
-                uploadFile(cdrPath, uploadPath);
-                uploadFile(infoPath, uploadPath);
-                return;
-            }
-        }
-
-        String yesterday = CalUtil.calDate(-1);
-        log.warn("Check [{}] CDR or INFO File", yesterday);
+        // dirPath 에 존재 하는 파일 중 filterValue 포함 하는 파일만 get
+        String[] arrFileList = dir.list(FileUtil.getFilenameFilter(filterValue));
+        return Arrays.asList(Objects.requireNonNull(arrFileList));
     }
 
     /**
      * 파일 전송
-     *
      * @param filePath 로컬 파일 경로/이름
      * @param uploadPath 업로드 경로
      */
@@ -243,22 +198,16 @@ public class SftpManager {
     }
 
     /**
-     * CDR INFO 파일 이름 확인
-     *
-     * @param fileName 파일 이름
+     * 디렉토리의 파일 개수
+     * @param dirPath 디렉토리 경로
      */
-    private boolean isInfoFile(String fileName) {
-        return fileName.contains(INFO_SUFFIX);
-    }
+    private int getDirFileNum(String dirPath) {
+        File dir = new File(dirPath);
+        if (!dir.exists() || !dir.isDirectory()) {
+            return 0;
+        }
 
-    private String getSpace(int index) {
-        String space;
-        if (index < 10)
-            space = "    ";
-        else if (index < 100)
-            space = "     ";
-        else
-            space = "      ";
-        return space;
+        List<String> fileList = Arrays.asList(Objects.requireNonNull(dir.list()));
+        return fileList.size();
     }
 }

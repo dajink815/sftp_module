@@ -1,9 +1,9 @@
 import com.jcraft.jsch.ChannelSftp;
-import media.platform.sftp.SftpMain;
 import media.platform.sftp.config.SftpConfig;
 import media.platform.sftp.service.ServiceDefine;
 import media.platform.sftp.sftp.SftpManager;
 import media.platform.sftp.util.CalUtil;
+import media.platform.sftp.util.FileUtil;
 import media.platform.sftp.util.SFTPUtil;
 import org.junit.Test;
 import java.io.File;
@@ -225,5 +225,12 @@ public class SftpTest {
             System.out.println("Sort Result : ");
             System.out.println(fileList);
         }
+    }
+
+    @Test
+    public void nameTest() {
+        String name = "CACS.D20211117.S001.F0000066.B01.INFO";
+        System.out.println(FileUtil.checkExtension(name, ".B01"));
+        System.out.println(FileUtil.checkExtension(name, ".INFO"));
     }
 }

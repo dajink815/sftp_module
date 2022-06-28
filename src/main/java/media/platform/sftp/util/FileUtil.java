@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.List;
 
 /**
  * @author dajin kim
@@ -100,19 +101,45 @@ public class FileUtil {
     }
 
     /**
-     * @fn moveFile
-     * @brief 파일을 이동 시키는 함수
-     * @param srcFileName: 파일 원위치
-     * @param destFileName: 파일 이동 위치
+     * @fn checkExtensions
+     * @brief 파일 확장자 체크
+     * @param fileName: 파일 명
+     * @param extensionList: 확장자 명 리스트
      * */
-    public static void moveFile(String srcFileName, String destFileName) {
-        try {
-            String cmd = "mv " + srcFileName + " " + destFileName;
-            log.info("System Command Exec [{}]", cmd);
-            Runtime.getRuntime().exec(cmd);
-        } catch (IOException e) {
-            log.error("FileUtil.moveFile Error [{} -> {}] ", srcFileName, destFileName, e);
+    public static boolean checkExtensions(String fileName, List<String> extensionList) {
+        for (String extension : extensionList) {
+            if (checkExtension(fileName, extension)) {
+                log.info("[{}] File Extension : {}", fileName, extension);
+                return true;
+            }
         }
+        return false;
+    }
+
+    /**
+     * @fn checkExtension
+     * @brief 파일 확장자 체크
+     * @param fileName: 파일 명
+     * @param extension: 확장자 명
+     * */
+    public static boolean checkExtension(String fileName, String extension) {
+        if (fileName.length() < extension.length()) return false;
+        String fileSuffix = fileName.substring(fileName.length() - extension.length());
+        return extension.equals(fileSuffix);
+    }
+
+    /**
+     * @fn getFilenameFilter
+     * @brief FilenameFilter 객체 생성
+     * @param filterData: 필터링 할 데이터, 해당 값을 포함 하면 통과
+     * */
+    public static FilenameFilter getFilenameFilter(String filterData) {
+        return new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.contains(filterData);
+            }
+        };
     }
 
 }

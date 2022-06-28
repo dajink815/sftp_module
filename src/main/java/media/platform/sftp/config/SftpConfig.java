@@ -1,5 +1,6 @@
 package media.platform.sftp.config;
 
+import media.platform.sftp.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.configuration2.*;
@@ -7,6 +8,9 @@ import org.apache.commons.configuration2.builder.ReloadingFileBasedConfiguration
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.reloading.PeriodicReloadingTrigger;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,6 +33,9 @@ public class SftpConfig extends SftpConfigInfo {
 
     private static final String SRC_DIR = "SRC_DIR";
     private static final String UPLOAD_DIR = "UPLOAD_DIR";
+
+    private static final String FILTER_VALUE = "FILTER_VALUE";
+    private static final String FILTER_EXTS = "FILTER_EXTS";
 
     public SftpConfig(String configPath) {
         loadConfigFile(configPath);
@@ -60,11 +67,15 @@ public class SftpConfig extends SftpConfigInfo {
         super.host = getStrValue(COMMON, SFTP_HOST, "");
         super.user = getStrValue(COMMON, SFTP_USER, "a2s");
         super.port = getIntValue(COMMON, SFTP_PORT, 22);
-        super.pass = getStrValue(COMMON, SFTP_PASS, "a2s.123");
-        super.privateKey = getStrValue(COMMON, PRIVATE_KEY, null);
+        super.pass = getStrValue(COMMON, SFTP_PASS, "1bdkOFR/N+ZEHbvx47UhNg==");
+        super.privateKey = getStrValue(COMMON, PRIVATE_KEY, "");
 
         super.srcDir = getStrValue(COMMON, SRC_DIR, "/a2s_cdr/backup");
-        super.uploadDir = getStrValue(COMMON, UPLOAD_DIR, "");
+        super.uploadDir = getStrValue(COMMON, UPLOAD_DIR, "/upload");
+
+        super.filterValue = getStrValue(COMMON, FILTER_VALUE, "");
+        super.filterExtsList = getListValue(COMMON, FILTER_EXTS, Arrays.asList("INFO", "B01"));
+
     }
 
 
@@ -78,11 +89,12 @@ public class SftpConfig extends SftpConfigInfo {
      */
     public String getStrValue(String section, String key, String defaultValue) {
         String mkey = section + "." + key;
-        String value = null;
 
         if (section == null) {
             return defaultValue;
         }
+
+        String value = null;
         try {
             value = userBuilder.getConfiguration().getString(mkey, defaultValue);
 
@@ -91,6 +103,27 @@ public class SftpConfig extends SftpConfigInfo {
         }
 
         return value;
+    }
+
+    public List<String> getListValue(String section, String key, List<String> defaultList) {
+        String mkey = section + "." + key;
+
+        if (section == null) {
+            return defaultList;
+        }
+        try {
+            String value = userBuilder.getConfiguration().getString(mkey, "");
+            if (StringUtil.isNull(value)) return defaultList;
+
+            // 쉼표 split, 공백 제거
+            String[] arr = value.split("\\s*,\\s*");
+            List<String> strList = new ArrayList<>(Arrays.asList(arr));
+
+            if (!strList.isEmpty()) return strList;
+        } catch (Exception e) {
+            log.error("A2sConfig.getStrValue", e);
+        }
+        return defaultList;
     }
 
     /**

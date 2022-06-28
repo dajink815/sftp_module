@@ -1,10 +1,15 @@
 package media.platform.sftp.config;
 
+import media.platform.sftp.util.CalUtil;
+import media.platform.sftp.util.StringUtil;
+
+import java.util.List;
+
 /**
  * @author dajin kim
  */
 public class SftpConfigInfo {
-    // SFTP
+    // COMMON
     protected String host;
     protected String user;
     protected int port;
@@ -13,6 +18,9 @@ public class SftpConfigInfo {
 
     protected String srcDir;
     protected String uploadDir;
+
+    protected String filterValue;
+    protected List<String> filterExtsList;
 
     protected SftpConfigInfo() {
         // nothing
@@ -46,6 +54,14 @@ public class SftpConfigInfo {
         return uploadDir;
     }
 
+    public String getFilterValue() {
+        if (StringUtil.isNull(filterValue)) return CalUtil.calDate(-1);
+        return filterValue;
+    }
+
+    public List<String> getFilterExtsList() {
+        return filterExtsList;
+    }
 
     @Override
     public String toString() {
@@ -57,6 +73,8 @@ public class SftpConfigInfo {
                 ", privateKey='" + privateKey + '\'' +
                 ", srcDir='" + srcDir + '\'' +
                 ", uploadDir='" + uploadDir + '\'' +
+                ", filterValue='" + filterValue + '\'' +
+                ", filterExtsList=" + filterExtsList +
                 '}';
     }
 }
