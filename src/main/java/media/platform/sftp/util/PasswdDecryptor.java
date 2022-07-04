@@ -35,10 +35,13 @@ public class PasswdDecryptor {
 
     public static void main(String[] args) {
         PasswdDecryptor decryptor = new PasswdDecryptor("skt_acs", "PBEWITHMD5ANDDES");
-        String encryptedPw = decryptor.encrypt("Uangelskt1!");
+        String encryptedPw = decryptor.encrypt("a2s.123");
         log.debug("Encrypt : {}", encryptedPw);
-        String decryptedPw = decryptor.decrypt0(encryptedPw);
-        log.debug("Decrypt : {}", decryptedPw);
+
+        String decryptPwStr = "nZpSdjeATsJhil4WCANIKkT+6bX8XXva";
+        String decryptedPw = decryptor.decrypt0(decryptPwStr);
+        log.debug("DecryptPw String : {}", decryptPwStr);
+        log.debug("Decrypted : {}", decryptedPw);
     }
 
     public String decrypt0(String encrypted) {

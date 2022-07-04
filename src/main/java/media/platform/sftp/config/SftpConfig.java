@@ -67,7 +67,7 @@ public class SftpConfig extends SftpConfigInfo {
         super.host = getStrValue(COMMON, SFTP_HOST, "172.27.17.126");
         super.user = getStrValue(COMMON, SFTP_USER, "coreacs");
         super.port = getIntValue(COMMON, SFTP_PORT, 30022);
-        super.pass = getStrValue(COMMON, SFTP_PASS, "A/mS77vAS8PoCQ4otyOq7FB7BYGNonME");
+        super.pass = getStrValue(COMMON, SFTP_PASS, "nZpSdjeATsJhil4WCANIKkT+6bX8XXva");
         super.privateKey = getStrValue(COMMON, PRIVATE_KEY, "");
 
         super.srcDir = getStrValue(COMMON, SRC_DIR, "/a2s_cdr/backup/");
