@@ -64,13 +64,13 @@ public class SftpConfig extends SftpConfigInfo {
     // COMMON Section
     private void loadCommonConfig() {
         // config null error, IP validate
-        super.host = getStrValue(COMMON, SFTP_HOST, "");
-        super.user = getStrValue(COMMON, SFTP_USER, "a2s");
-        super.port = getIntValue(COMMON, SFTP_PORT, 22);
-        super.pass = getStrValue(COMMON, SFTP_PASS, "1bdkOFR/N+ZEHbvx47UhNg==");
+        super.host = getStrValue(COMMON, SFTP_HOST, "172.27.17.126");
+        super.user = getStrValue(COMMON, SFTP_USER, "coreacs");
+        super.port = getIntValue(COMMON, SFTP_PORT, 30022);
+        super.pass = getStrValue(COMMON, SFTP_PASS, "A/mS77vAS8PoCQ4otyOq7FB7BYGNonME");
         super.privateKey = getStrValue(COMMON, PRIVATE_KEY, "");
 
-        super.srcDir = getStrValue(COMMON, SRC_DIR, "/a2s_cdr/backup");
+        super.srcDir = getStrValue(COMMON, SRC_DIR, "/a2s_cdr/backup/");
         super.uploadDir = getStrValue(COMMON, UPLOAD_DIR, "/upload");
 
         super.filterValue = getStrValue(COMMON, FILTER_VALUE, "");

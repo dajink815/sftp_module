@@ -35,7 +35,7 @@ public class PasswdDecryptor {
 
     public static void main(String[] args) {
         PasswdDecryptor decryptor = new PasswdDecryptor("skt_acs", "PBEWITHMD5ANDDES");
-        String encryptedPw = decryptor.encrypt("acs.123");
+        String encryptedPw = decryptor.encrypt("Uangelskt1!");
         log.debug("Encrypt : {}", encryptedPw);
         String decryptedPw = decryptor.decrypt0(encryptedPw);
         log.debug("Decrypt : {}", decryptedPw);
